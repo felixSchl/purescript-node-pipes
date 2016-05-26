@@ -16,6 +16,6 @@
     "purescript-node-fs-aff": "~0.6.0",
     "purescript-node-child-process": "^0.6.1",
     "purescript-node-readline": "^0.5.0",
-    "purescript-pipes": "^0.0.0"
+    "purescript-pipes": "~0.0.1"
   }
 }

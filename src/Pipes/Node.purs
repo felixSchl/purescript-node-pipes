@@ -1,7 +1,7 @@
 module Pipes.Node (
     fromStream
   , fromStream'
-  , lines
+  , toLines
   ) where
 
 import Prelude
@@ -68,23 +68,21 @@ _fromStream size r = do
 fromStream  = _fromStream Nothing
 fromStream' = _fromStream <<< pure
 
-lines :: Pipe (Maybe Buffer) String (Aff (buffer :: BUFFER | _)) Unit
-lines = go (Regex.regex "\r?\n" $ Regex.parseFlags "gm") ""
+toLines :: Pipe (Maybe Buffer) String (Eff (buffer :: BUFFER | _)) Unit
+toLines = go (Regex.regex "\r?\n" $ Regex.parseFlags "gm") ""
   where
     go rex acc = do
       mbuf <- await
       case mbuf of
           Just buf -> do
               Tuple toEmit toKeep <- lift do
-                liftEff do
-                  s <- Buffer.toString UTF8 buf
-                  let pieces = Regex.split rex $ acc <> s
-                      toEmit = fromMaybe [] (A.init pieces)
-                      toKeep = fromMaybe "" (A.last pieces)
-                  pure $ Tuple toEmit toKeep
+                s <- Buffer.toString UTF8 buf
+                let pieces = Regex.split rex $ acc <> s
+                    toEmit = fromMaybe [] (A.init pieces)
+                    toKeep = fromMaybe "" (A.last pieces)
+                pure $ Tuple toEmit toKeep
               traverse yield toEmit
               go rex toKeep
           Nothing ->
-            if not $ String.null acc
-              then yield acc
-              else pure unit
+            when (not $ String.null acc) do
+              yield acc

@@ -1,6 +1,5 @@
 module Pipes.Node (
     fromStream
-  , fromStream'
   , toLines
   ) where
 
@@ -34,11 +33,10 @@ import Node.Encoding (Encoding(UTF8))
 import Node.Buffer (BUFFER, Buffer())
 
 -- Create a pipe of buffers from a readable stream.
-_fromStream
-  :: Maybe Int
-  -> Readable _ _
+fromStream
+  :: Readable _ _
   -> Producer_ (Maybe Buffer) (Aff _) Unit
-_fromStream size r = do
+fromStream r = do
   (Tuple vRequest vResponse) <- lift do
     vRequest  <- makeVar' unit
     vResponse <- makeVar
@@ -46,8 +44,8 @@ _fromStream size r = do
       Stream.onReadable r do
         launchAff do
           takeVar vRequest
-          d <- liftEff $ Stream.read r size
-          case d of
+          mbuf <- liftEff $ Stream.read r Nothing
+          case mbuf of
             Just buf -> putVar vResponse (Just buf)
             Nothing  -> pure unit
       Stream.onEnd r do
@@ -64,9 +62,6 @@ _fromStream size r = do
       when (isJust v) do
         lift $ putVar vReq unit
         go vReq vRes
-
-fromStream  = _fromStream Nothing
-fromStream' = _fromStream <<< pure
 
 -- Transform a pipe of buffers into a pipe of lines.
 toLines :: Pipe (Maybe Buffer) String (Eff (buffer :: BUFFER | _)) Unit

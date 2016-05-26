@@ -33,7 +33,7 @@ import Node.Buffer as Buffer
 import Node.Encoding (Encoding(UTF8))
 import Node.Buffer (BUFFER, Buffer())
 
--- Open a read stream
+-- Create a pipe of buffers from a readable stream.
 _fromStream
   :: Maybe Int
   -> Readable _ _
@@ -68,6 +68,7 @@ _fromStream size r = do
 fromStream  = _fromStream Nothing
 fromStream' = _fromStream <<< pure
 
+-- Transform a pipe of buffers into a pipe of lines.
 toLines :: Pipe (Maybe Buffer) String (Eff (buffer :: BUFFER | _)) Unit
 toLines = go (Regex.regex "\r?\n" $ Regex.parseFlags "gm") ""
   where
